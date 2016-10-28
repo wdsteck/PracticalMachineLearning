@@ -10,3 +10,84 @@ output:
   pdf_document:
     toc: yes
 ---
+
+## Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.
+
+In this project, the goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to create a prediction model determining which of the 6 different ways to lift the barbell is being used.
+
+More information is available from [this website](http://groupware.les.inf.puc-rio.br/har) (see the section on the Weight Lifting Exercise Dataset).
+
+```{r}
+library(caret)
+set.seed(33833)
+```
+
+## Data
+
+The training data for this project are available here:
+```R
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+```
+
+The test data are available here:
+```R
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+```
+
+## Read in the Data
+
+```{R Introduce Data}
+
+trainFile = "pml-training.csv"
+trainURL = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testFile = "pml-testing.csv"
+testURL = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+if (!file.exists(trainFile)) {
+        download.file(trainURL, trainFile)
+}
+trainDat <- read.csv(trainFile, stringsAsFactors = TRUE)
+
+if (!file.exists(testFile)) {
+        download.file(testURL, testFile)
+}
+testDat <- read.csv(testFile, stringsAsFactors = TRUE)
+
+```
+
+## Clean Up the Data
+
+We are instructed to use
+
+> data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants
+
+so extract the appropriate features:
+
+```{r}
+filter = grepl("belt|arm|dumbell|classe", names(trainDat))
+trainDat = trainDat[, filter]
+testDat = testDat[, filter]
+```
+
+If a feature has any `NA` values, then remove the feature. Use the test data to
+determine the columns to ensure the model can run on this data.
+
+```{r}
+clean.cols = colSums(is.na(testDat)) == 0
+trainDat = trainDat[, clean.cols]
+testDat = testDat[, clean.cols]
+```
+
+## Preprocessing
+
+Since the training data set is so large (`r length(trainDat$classe)` rows), split
+the training set into a training set and a validation set.
+
+```{r}
+inTrain <- createDataPartition(trainDat$classe, p=0.7, list=F)
+trainDat.train <- trainDat[inTrain,]
+trainDat.valid <- trainDat[-inTrain,]
+```
+
