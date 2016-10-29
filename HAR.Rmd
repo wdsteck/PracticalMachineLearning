@@ -91,3 +91,21 @@ trainDat.train <- trainDat[inTrain,]
 trainDat.valid <- trainDat[-inTrain,]
 ```
 
+```{r}
+for (meth in c("cv", "boot", "oob")) {
+        print(meth)
+        for (i in 3:6) {
+                modFitoob <- train(classe ~ ., data = trainDat.train, method = "rf",
+                                   trControl = trainControl(method=meth, number=i))
+                predicted <- predict(modFitoob, trainDat.valid)
+                accuracy <- sum(predicted == trainDat.valid$classe) / length(predicted)
+                print(paste("Method:", meth, "Number:", i, "accuracy:", accuracy))
+        }
+}
+```
+```{r}
+predicted <- predict(modFit, trainDat.valid)
+accuracy <- sum(predicted == trainDat.valid$classe) / length(predicted)
+accuracy
+```
+
