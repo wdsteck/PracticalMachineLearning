@@ -13,4 +13,4 @@ Files include:
 - PMLProj.Rproj - RStudio project file
 - EADME.md - This file
 
-The answer can be found by looking at one of the final report files above or by looking at the compiled html file here.
+The answer can be found by looking at one of the final report files above or by looking at the [compiled html file here](https://wdsteck.github.io/practicalmachinelearning).
