@@ -1,15 +1,6 @@
----
-title: "Prediction of Weight Lifting Activity from Data Provided by Wearable Accelerometers"
-author: "wdsteck"
-date: '`r format(Sys.Date(), "%B %d, %Y")`'
-output:
-  html_document:
-    keep_md: yes
-    theme: united
-    toc: yes
-  pdf_document:
-    toc: yes
----
+# Prediction of Weight Lifting Activity from Data Provided by Wearable Accelerometers
+wdsteck  
+`r format(Sys.Date(), "%B %d, %Y")`  
 
 ## Introduction
 
@@ -19,9 +10,13 @@ In this project, the goal is to use data from accelerometers on the belt, forear
 
 More information is available from [this website](http://groupware.les.inf.puc-rio.br/har) (see the section on the Weight Lifting Exercise Dataset).
 
-```{r Init, echo=FALSE, results="hide"}
-library(caret)
-set.seed(33833)
+
+```
+## Loading required package: lattice
+```
+
+```
+## Loading required package: ggplot2
 ```
 
 ## Data
@@ -38,8 +33,8 @@ https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 
 ## Read in the Data
 
-```{R Introduce Data}
 
+```r
 trainFile = "pml-training.csv"
 trainURL = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 testFile = "pml-testing.csv"
@@ -54,7 +49,6 @@ if (!file.exists(testFile)) {
         download.file(testURL, testFile)
 }
 testDat <- read.csv(testFile, stringsAsFactors = TRUE)
-
 ```
 
 ## Clean Up the Data
@@ -65,7 +59,8 @@ We are instructed to use
 
 so extract the appropriate features:
 
-```{r Select Columns}
+
+```r
 filter = grepl("belt|arm|dumbell|classe", names(trainDat))
 trainDat = trainDat[, filter]
 testDat = testDat[, filter]
@@ -74,7 +69,8 @@ testDat = testDat[, filter]
 If a feature has any `NA` values, then remove the feature. Use the test data to
 determine the columns to ensure the model can run on this data.
 
-```{r Remove NA}
+
+```r
 filter = colSums(is.na(testDat)) == 0
 trainDat = trainDat[, filter]
 testDat = testDat[, filter]
@@ -82,28 +78,42 @@ testDat = testDat[, filter]
 
 Ensure that features are not mostly zero nor have zero variability. Any
 features mostly zero or with zero variability should be eliminated.
-```{r Near Zero}
+
+```r
 nearZeroVar(x = trainDat)
+```
+
+```
+## integer(0)
 ```
 `NearZeroVar()` returns no covariants that should be removed.
 
 Investigate the correlations between the variables. If there are any
 pairs of variables that are highly correlated, then remove one of them.
 
-```{r Clean Correlation}
+
+```r
 corMatrix <- cor(trainDat[sapply(trainDat, is.numeric)])
 highlyCor = findCorrelation(corMatrix, cutoff = .90)
 highlyCor
+```
+
+```
+## [1]  1 10  4  8 18
+```
+
+```r
 trainDat <- trainDat[,-highlyCor]
 testDat <- testDat[,-highlyCor]
 ```
 
 ## Split Data for Model Creation
 
-Since the training data set is so large (`r length(trainDat$classe)` rows), split
+Since the training data set is so large (19622 rows), split
 the training set into a training set and a validation set.
 
-```{r Split Training}
+
+```r
 inTrain <- createDataPartition(trainDat$classe, p=0.7, list=F)
 trainDat.train <- trainDat[inTrain,]
 trainDat.valid <- trainDat[-inTrain,]
@@ -116,31 +126,60 @@ using different generation methods to see which is more accurate.
 
 ### Regression Tree Method
 
-```{r Model Rpart}
+
+```r
 modFit.rpart <- train(classe ~ ., 
                data=trainDat.train,
                method="rpart")
+```
+
+```
+## Loading required package: rpart
 ```
 
 Once the model has been created, determine its accuracy in selecting
 the correct activity by predicting each of the validation data samples
 and compare them against the true activity.
 
-```{r Accuracy Rpart}
+
+```r
 predicted <- predict(modFit.rpart, trainDat.valid)
 confusionMatrix(trainDat.valid$classe, predicted)$table
+```
+
+```
+##           Reference
+## Prediction   A   B   C   D   E
+##          A 864 225 407 175   3
+##          B  25 580 375 159   0
+##          C   0 416 456 153   1
+##          D  11 190 178 503  82
+##          E   1 340 165 203 373
+```
+
+```r
 accuracy.rpart <- sum(predicted == trainDat.valid$classe) / length(predicted)
 accuracy.rpart
+```
+
+```
+## [1] 0.4717077
+```
+
+```r
 plot(varImp(modFit.rpart))
 ```
 
-As expected, the accuracy of this model (`r round(accuracy.rpart * 100, 3)`%) is very poor. It is a simple model based on dividing features to isolate answers.
+![](index_files/figure-html/Accuracy Rpart-1.png)<!-- -->
+
+As expected, the accuracy of this model (47.171%) is very poor. It is a simple model based on dividing features to isolate answers.
 
 See if others can do better.
 
 ### Random Forest Method
 
-```{r Model RF}
+
+```r
 modFit.rf <- train(classe ~ ., 
                data=trainDat.train,
                method="rf",
@@ -148,24 +187,71 @@ modFit.rf <- train(classe ~ .,
                verbose=F)
 ```
 
+```
+## Loading required package: randomForest
+```
+
+```
+## randomForest 4.6-12
+```
+
+```
+## Type rfNews() to see new features/changes/bug fixes.
+```
+
+```
+## 
+## Attaching package: 'randomForest'
+```
+
+```
+## The following object is masked from 'package:ggplot2':
+## 
+##     margin
+```
+
 Once the model has been created, determine its accuracy in selecting
 the correct activity by predicting each of the validation data samples
 and compare them against the true activity.
 
-```{r Accuracy RF}
+
+```r
 predicted <- predict(modFit.rf, trainDat.valid)
 confusionMatrix(trainDat.valid$classe, predicted)$table
+```
+
+```
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1663    5    1    2    3
+##          B    2 1127    8    1    1
+##          C    2   11  998   10    5
+##          D    0    0   10  952    2
+##          E    0    0    0    1 1081
+```
+
+```r
 accuracy.rf <- sum(predicted == trainDat.valid$classe) / length(predicted)
 accuracy.rf
+```
+
+```
+## [1] 0.9891249
+```
+
+```r
 plot(varImp(modFit.rf))
 ```
 
-The random forest accuracy is `r round(accuracy.rf * 100, 3)`%, much better,
+![](index_files/figure-html/Accuracy RF-1.png)<!-- -->
+
+The random forest accuracy is 98.912%, much better,
 as expected, than the simple rpart model.
 
 ### Boosting Method
 
-```{r Model GBM}
+
+```r
 modFit.gbm <- train(classe ~ ., 
                data=trainDat.train,
                method="gbm",
@@ -173,30 +259,94 @@ modFit.gbm <- train(classe ~ .,
                verbose=F)
 ```
 
+```
+## Loading required package: gbm
+```
+
+```
+## Loading required package: survival
+```
+
+```
+## 
+## Attaching package: 'survival'
+```
+
+```
+## The following object is masked from 'package:caret':
+## 
+##     cluster
+```
+
+```
+## Loading required package: splines
+```
+
+```
+## Loading required package: parallel
+```
+
+```
+## Loaded gbm 2.1.1
+```
+
+```
+## Loading required package: plyr
+```
+
 Once the model has been created, determine its accuracy in selecting
 the correct activity by predicting each of the validation data samples
 and compare them against the true activity.
 
-```{r Accuracy GBM}
+
+```r
 predicted <- predict(modFit.gbm, trainDat.valid)
 confusionMatrix(trainDat.valid$classe, predicted)$table
+```
+
+```
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1619   31   11   12    1
+##          B   48 1043   43    1    4
+##          C    0   90  895   32    9
+##          D    8    7   47  891   11
+##          E    7   15   14   16 1030
+```
+
+```r
 accuracy.gbm <- sum(predicted == trainDat.valid$classe) / length(predicted)
 accuracy.gbm
+```
+
+```
+## [1] 0.9308411
+```
+
+```r
 plot(varImp(modFit.gbm))
 ```
 
-The boost model accuracy is `r round(accuracy.gbm * 100, 3)`%, not as good as
+![](index_files/figure-html/Accuracy GBM-1.png)<!-- -->
+
+The boost model accuracy is 93.084%, not as good as
 the random forest model.
 
 # Conclusion
 
-The accuracy of the random forest model (`r round(accuracy.rf * 100, 3)`%) is
+The accuracy of the random forest model (98.912%) is
 very high. The Random Forest method of model selection has found
 a very good prediction model of exercise behavior.
 
 Now, we can predict the outcomes of the test data using the model.
 
-```{r Test Prediction}
+
+```r
 predict(modFit.rf, testDat)
+```
+
+```
+##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E
 ```
 
