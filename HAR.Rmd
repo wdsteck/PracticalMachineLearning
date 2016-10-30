@@ -1,5 +1,5 @@
 ---
-title: Prediction of Weight Lifting Activity from Data Provided by Wearable Accelerometers
+title: "Prediction of Weight Lifting Activity from Data Provided by Wearable Accelerometers"
 author: "wdsteck"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
@@ -80,7 +80,25 @@ trainDat = trainDat[, clean.cols]
 testDat = testDat[, clean.cols]
 ```
 
-## Preprocessing
+Ensure that features are not mostly zero nor have zero variability. Any
+features mostly zero or with zero variability should be eliminated.
+```{r}
+nearZeroVar(x = trainDat)
+```
+`NearZeroVar()` returns no covariants that should be removed.
+
+Investigate the correlations between the variables. If there are any
+pairs of variables that are highly correlated, then remove one of them.
+
+```{r}
+corMatrix <- cor(trainDat[sapply(trainDat, is.numeric)])
+highlyCor = findCorrelation(corMatrix, cutoff = .90)
+highlyCor
+trainDat <- trainDat[,-highlyCor]
+testDat <- testDat[,-highlyCor]
+```
+
+## Split Data for Model Creation
 
 Since the training data set is so large (`r length(trainDat$classe)` rows), split
 the training set into a training set and a validation set.
@@ -91,21 +109,91 @@ trainDat.train <- trainDat[inTrain,]
 trainDat.valid <- trainDat[-inTrain,]
 ```
 
+## Model Creation
+
+Now that we have our data ready for model creation, try to create the model
+using different generation methods to see which is more accurate.
+
+### Regression Tree Method
+
 ```{r}
-for (meth in c("cv", "boot", "oob")) {
-        print(meth)
-        for (i in 3:6) {
-                modFitoob <- train(classe ~ ., data = trainDat.train, method = "rf",
-                                   trControl = trainControl(method=meth, number=i))
-                predicted <- predict(modFitoob, trainDat.valid)
-                accuracy <- sum(predicted == trainDat.valid$classe) / length(predicted)
-                print(paste("Method:", meth, "Number:", i, "accuracy:", accuracy))
-        }
-}
+modFit.rpart <- train(classe ~ ., 
+               data=trainDat.train,
+               method="rpart")
 ```
+
+Once the model has been created, determine its accuracy in selecting
+the correct activity by predicting each of the validation data samples
+and compare them against the true activity.
+
 ```{r}
-predicted <- predict(modFit, trainDat.valid)
+predicted <- predict(modFit.rpart, trainDat.valid)
+confusionMatrix(trainDat.valid$classe, predicted)$table
 accuracy <- sum(predicted == trainDat.valid$classe) / length(predicted)
 accuracy
+plot(modFit.rpart)
+plot(varImp(modFit.rpart))
+```
+
+As expected, the accuracy of this model (`r round(accuracy * 100, 3)`%) is very poor. It is a simple model based on dividing features to isolate answers.
+
+See if others can do better.
+
+### Random Forest Method
+
+```{r}
+modFit.rf <- train(classe ~ ., 
+               data=trainDat.train,
+               method="rf",
+               trControl=trainControl(method="cv", number=4),
+               verbose=F)
+```
+
+Once the model has been created, determine its accuracy in selecting
+the correct activity by predicting each of the validation data samples
+and compare them against the true activity.
+
+```{r}
+predicted <- predict(modFit.rf, trainDat.valid)
+confusionMatrix(trainDat.valid$classe, predicted)$table
+accuracy <- sum(predicted == trainDat.valid$classe) / length(predicted)
+accuracy
+plot(modFit.rf)
+plot(varImp(modFit.rf))
+```
+
+### Boosting Method
+
+```{r}
+modFit.gbm <- train(classe ~ ., 
+               data=trainDat.train,
+               method="gbm",
+               trControl=trainControl(method="cv", number=4),
+               verbose=F)
+```
+
+Once the model has been created, determine its accuracy in selecting
+the correct activity by predicting each of the validation data samples
+and compare them against the true activity.
+
+```{r}
+predicted <- predict(modFit.gbm, trainDat.valid)
+confusionMatrix(trainDat.valid$classe, predicted)$table
+accuracy <- sum(predicted == trainDat.valid$classe) / length(predicted)
+accuracy
+plot(modFit.gbm)
+plot(varImp(modFit.gbm))
+```
+
+# Conclusion
+
+The accuracy of the random forest model (`r round(accuracy * 100, 3)`%) is
+very high. The Random Forest method of model selection has found
+a very good prediction model of exercise behavior.
+
+Now, we can predict the outcomes of the test data using the model.
+
+```{r}
+predict(modFit.rf, testDat)
 ```
 
