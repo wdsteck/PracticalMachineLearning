@@ -167,12 +167,21 @@ accuracy.rpart
 ```
 
 ```r
+ooser.rpart <- 1 - accuracy.rpart
+ooser.rpart
+```
+
+```
+## [1] 0.5282923
+```
+
+```r
 plot(varImp(modFit.rpart))
 ```
 
 ![](index_files/figure-html/Accuracy Rpart-1.png)<!-- -->
 
-As expected, the accuracy of this model (47.171%) is very poor. It is a simple model based on dividing features to isolate answers.
+As expected, the accuracy of this model (47.171%) is very poor (out of sample error rate is high at 52.829%).
 
 See if others can do better.
 
@@ -240,13 +249,23 @@ accuracy.rf
 ```
 
 ```r
+ooser.rf <- 1 - accuracy.rf
+ooser.rf
+```
+
+```
+## [1] 0.01087511
+```
+
+```r
 plot(varImp(modFit.rf))
 ```
 
 ![](index_files/figure-html/Accuracy RF-1.png)<!-- -->
 
 The random forest accuracy is 98.912%, much better,
-as expected, than the simple rpart model.
+as expected, than the simple rpart model. Out of sample error rate is very low at
+1.088%.
 
 ### Boosting Method
 
@@ -324,13 +343,23 @@ accuracy.gbm
 ```
 
 ```r
+ooser.gbm <- 1 - accuracy.gbm
+ooser.gbm
+```
+
+```
+## [1] 0.06915888
+```
+
+```r
 plot(varImp(modFit.gbm))
 ```
 
 ![](index_files/figure-html/Accuracy GBM-1.png)<!-- -->
 
 The boost model accuracy is 93.084%, not as good as
-the random forest model.
+the random forest model. Out of sample error rate is very low at
+6.916%.
 
 # Conclusion
 

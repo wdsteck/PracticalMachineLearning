@@ -3,11 +3,11 @@ title: "Prediction of Weight Lifting Activity from Data Provided by Wearable Acc
 author: "wdsteck"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-  pdf_document:
-    toc: yes
   html_document:
     keep_md: yes
     theme: united
+    toc: yes
+  pdf_document:
     toc: yes
 ---
 
@@ -131,10 +131,12 @@ predicted <- predict(modFit.rpart, trainDat.valid)
 confusionMatrix(trainDat.valid$classe, predicted)$table
 accuracy.rpart <- sum(predicted == trainDat.valid$classe) / length(predicted)
 accuracy.rpart
+ooser.rpart <- 1 - accuracy.rpart
+ooser.rpart
 plot(varImp(modFit.rpart))
 ```
 
-As expected, the accuracy of this model (`r round(accuracy.rpart * 100, 3)`%) is very poor. It is a simple model based on dividing features to isolate answers.
+As expected, the accuracy of this model (`r round(accuracy.rpart * 100, 3)`%) is very poor (out of sample error rate is high at `r round(ooser.rpart * 100, 3)`%).
 
 See if others can do better.
 
@@ -157,11 +159,14 @@ predicted <- predict(modFit.rf, trainDat.valid)
 confusionMatrix(trainDat.valid$classe, predicted)$table
 accuracy.rf <- sum(predicted == trainDat.valid$classe) / length(predicted)
 accuracy.rf
+ooser.rf <- 1 - accuracy.rf
+ooser.rf
 plot(varImp(modFit.rf))
 ```
 
 The random forest accuracy is `r round(accuracy.rf * 100, 3)`%, much better,
-as expected, than the simple rpart model.
+as expected, than the simple rpart model. Out of sample error rate is very low at
+`r round(ooser.rf * 100, 3)`%.
 
 ### Boosting Method
 
@@ -182,11 +187,14 @@ predicted <- predict(modFit.gbm, trainDat.valid)
 confusionMatrix(trainDat.valid$classe, predicted)$table
 accuracy.gbm <- sum(predicted == trainDat.valid$classe) / length(predicted)
 accuracy.gbm
+ooser.gbm <- 1 - accuracy.gbm
+ooser.gbm
 plot(varImp(modFit.gbm))
 ```
 
 The boost model accuracy is `r round(accuracy.gbm * 100, 3)`%, not as good as
-the random forest model.
+the random forest model. Out of sample error rate is very low at
+`r round(ooser.gbm * 100, 3)`%.
 
 # Conclusion
 
